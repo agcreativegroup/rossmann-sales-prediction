@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rossmann Sales Prediction Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            padding: 40px;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .tab {
+            padding: 15px 30px;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            font-size: 1rem;
+            color: #666;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            color: #4facfe;
+            border-bottom: 3px solid #4facfe;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e1e1;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #4facfe;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            margin-right: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .results {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #4facfe;
+        }
+
+        .results h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #e1e1e1;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-value {
+            font-weight: bold;
+            color: #4facfe;
+            font-size: 1.1rem;
+        }
+
+        .file-upload {
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-upload:hover {
+            border-color: #4facfe;
+            background: #f8f9fa;
+        }
+
+        .file-upload.dragover {
+            border-color: #4facfe;
+            background: #e3f2fd;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4facfe;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #c62828;
+        }
+
+        .success {
+            background: #e8f5e8;
+            color: #2e7d32;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #2e7d32;
+        }
+
+        .plot-container {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .plot-container img {
+            max-width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .main-content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Rossmann Sales Prediction Dashboard</h1>
+            <p>Predict store sales and customer numbers with machine learning</p>
+        </div>
+
+        <div class="main-content">
+            <div class="tabs">
+                <button class="tab active" onclick="showTab('single')">Single Prediction</button>
+                <button class="tab" onclick="showTab('batch')">Batch Prediction</button>
+            </div>
+
+            <!-- Single Prediction Tab -->
+            <div id="single" class="tab-content active">
+                <form id="singleForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="store_id">Store ID:</label>
+                            <input type="number" id="store_id" name="store_id" value="1" min="1" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="date">Date:</label>
+                            <input type="date" id="date" name="date" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="is_holiday">Is Holiday:</label>
+                            <select id="is_holiday" name="is_holiday">
+                                <option value="0">No</option>
+                                <option value="1">Yes</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="is_weekend">Is Weekend:</label>
+                            <select id="is_weekend" name="is_weekend">
+                                <option value="0">No</option>
+                                <option value="1">Yes</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="is_promo">Is Promo:</label>
+                            <select id="is_promo" name="is_promo">
+                                <option value="0">No</option>
+                                <option value="1">Yes</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="open">Store Open:</label>
+                            <select id="open" name="open">
+                                <option value="1">Open</option>
+                                <option value="0">Closed</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn">Predict Sales</button>
+                    <button type="button" class="btn btn-secondary" onclick="generatePlot()">Show Plot</button>
+                </form>
+
+                <div class="loading" id="singleLoading">
+                    <div class="spinner"></div>
+                    <p>Making prediction...</p>
+                </div>
+
+                <div id="singleResults" class="results" style="display: none;">
+                    <h3>Prediction Results</h3>
+                    <div class="result-item">
+                        <span>Predicted Sales:</span>
+                        <span id="predictedSales" class="result-value">-</span>
+                    </div>
+                    <div class="result-item">
+                        <span>Estimated Customers:</span>
+                        <span id="estimatedCustomers" class="result-value">-</span>
+                    </div>
+                    <div class="result-item">
+                        <span>Store ID:</span>
+                        <span id="resultStoreId" class="result-value">-</span>
+                    </div>
+                    <div class="result-item">
+                        <span>Date:</span>
+                        <span id="resultDate" class="result-value">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Batch Prediction Tab -->
+            <div id="batch" class="tab-content">
+                <form id="batchForm" enctype="multipart/form-data">
+                    <div class="file-upload" onclick="document.getElementById('csvFile').click()">
+                        <p>📄 Click to upload CSV file or drag and drop</p>
+                        <p><small>Supported format: CSV with columns: Store, Date, IsHoliday, IsWeekend, IsPromo, etc.</small></p>
+                        <input type="file" id="csvFile" name="file" accept=".csv" style="display: none;" onchange="updateFileName(this)">
+                    </div>
+                    <p id="fileName" style="margin-top: 10px; font-weight: bold;"></p>
+
+                    <button type="submit" class="btn" style="margin-top: 20px;">Process Batch Prediction</button>
+                </form>
+
+                <div class="loading" id="batchLoading">
+                    <div class="spinner"></div>
+                    <p>Processing batch predictions...</p>
+                </div>
+
+                <div id="batchResults" class="results" style="display: none;">
+                    <h3>Batch Prediction Results</h3>
+                    <div class="result-item">
+                        <span>Total Predictions:</span>
+                        <span id="totalPredictions" class="result-value">-</span>
+                    </div>
+                    <button id="downloadBtn" class="btn" style="margin-top: 15px;">Download Results</button>
+                </div>
+            </div>
+
+            <div id="plotContainer" class="plot-container" style="display: none;">
+                <h3>Sales Prediction Visualization</h3>
+                <img id="plotImage" src="" alt="Sales Plot">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Set default date to today
+        document.getElementById('date').valueAsDate = new Date();
+
+        // Tab switching
+        function showTab(tabName) {
+            const tabs = document.querySelectorAll('.tab');
+            const contents = document.querySelectorAll('.tab-content');
+            
+            tabs.forEach(tab => tab.classList.remove('active'));
+            contents.forEach(content => content.classList.remove('active'));
+            
+            document.querySelector(`[onclick="showTab('${tabName}')"]`).classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+        }
+
+        // Single prediction form
+        document.getElementById('singleForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const loading = document.getElementById('singleLoading');
+            const results = document.getElementById('singleResults');
+            
+            loading.style.display = 'block';
+            results.style.display = 'none';
+            
+            try {
+                const formData = new FormData(this);
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    showError(data.error);
+                } else {
+                    document.getElementById('predictedSales').textContent = `$${data.predicted_sales}`;
+                    document.getElementById('estimatedCustomers').textContent = data.estimated_customers;
+                    document.getElementById('resultStoreId').textContent = data.store_id;
+                    document.getElementById('resultDate').textContent = data.date;
+                    
+                    results.style.display = 'block';
+                }
+            } catch (error) {
+                showError('Error making prediction: ' + error.message);
+            } finally {
+                loading.style.display = 'none';
+            }
+        });
+
+        // Batch prediction form
+        document.getElementById('batchForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const fileInput = document.getElementById('csvFile');
+            if (!fileInput.files[0]) {
+                showError('Please select a CSV file');
+                return;
+            }
+            
+            const loading = document.getElementById('batchLoading');
+            const results = document.getElementById('batchResults');
+            
+            loading.style.display = 'block';
+            results.style.display = 'none';
+            
+            try {
+                const formData = new FormData(this);
+                const response = await fetch('/predict_batch', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    showError(data.error);
+                } else {
+                    document.getElementById('totalPredictions').textContent = data.total_predictions;
+                    document.getElementById('downloadBtn').onclick = () => {
+                        window.location.href = data.download_url;
+                    };
+                    
+                    results.style.display = 'block';
+                    showSuccess(data.message);
+                }
+            } catch (error) {
+                showError('Error processing batch prediction: ' + error.message);
+            } finally {
+                loading.style.display = 'none';
+            }
+        });
+
+        // Generate plot
+        async function generatePlot() {
+            try {
+                const response = await fetch('/plot');
+                const data = await response.json();
+                
+                if (data.error) {
+                    showError(data.error);
+                } else {
+                    document.getElementById('plotImage').src = 'data:image/png;base64,' + data.plot;
+                    document.getElementById('plotContainer').style.display = 'block';
+                }
+            } catch (error) {
+                showError('Error generating plot: ' + error.message);
+            }
+        }
+
+        // File upload helpers
+        function updateFileName(input) {
+            const fileName = document.getElementById('fileName');
+            if (input.files[0]) {
+                fileName.textContent = `Selected: ${input.files[0].name}`;
+            } else {
+                fileName.textContent = '';
+            }
+        }
+
+        // Drag and drop functionality
+        const fileUpload = document.querySelector('.file-upload');
+        
+        fileUpload.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('dragover');
+        });
+
+        fileUpload.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+        });
+
+        fileUpload.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                document.getElementById('csvFile').files = files;
+                updateFileName(document.getElementById('csvFile'));
+            }
+        });
+
+        // Utility functions
+        function showError(message) {
+            removeMessages();
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error';
+            errorDiv.textContent = message;
+            document.querySelector('.main-content').insertBefore(errorDiv, document.querySelector('.tabs').nextSibling);
+        }
+
+        function showSuccess(message) {
+            removeMessages();
+            const successDiv = document.createElement('div');
+            successDiv.className = 'success';
+            successDiv.textContent = message;
+            document.querySelector('.main-content').insertBefore(successDiv, document.querySelector('.tabs').nextSibling);
+        }
+
+        function removeMessages() {
+            const messages = document.querySelectorAll('.error, .success');
+            messages.forEach(msg => msg.remove());
+        }
+
+        // Auto-detect weekend based on date
+        document.getElementById('date').addEventListener('change', function() {
+            const date = new Date(this.value);
+            const dayOfWeek = date.getDay();
+            const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6) ? 1 : 0;
+            document.getElementById('is_weekend').value = isWeekend;
+        });
+    </script>
+</body>
+</html>
